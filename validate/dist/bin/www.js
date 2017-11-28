@@ -3,21 +3,28 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const cluster = require("cluster");
-const git = require("simple-git");
+const git = require("simple-git/promise");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const schedule = require("node-schedule");
+const core = require("core-js/library");
 const numCPUs = 1;
 const debugLogger = debug('Master');
-setupRepo();
-setupWorkers();
-function setupRepo() {
+const refreshJob = setupRefresh();
+setupRepo().then(() => setupWorkers());
+async function setupRepo() {
     let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
     let workingDir = path.resolve(os.homedir(), `repo`);
     if (!fs.existsSync(workingDir)) {
         fs.mkdirSync(workingDir);
-        git(workingDir).clone(specsRepo, workingDir, '--depth=1');
+        let gitOptions = ['--depth=1'];
+        await git(workingDir).clone(specsRepo, workingDir, gitOptions);
     }
+    else {
+        await git(workingDir).pull();
+    }
+    return Promise.resolve();
 }
 function setupWorkers() {
     cluster.setupMaster({
@@ -35,4 +42,13 @@ function setupWorkers() {
     for (var i = 0; i < numCPUs; i++) {
         cluster.fork();
     }
+}
+function setupRefresh() {
+    let refreshJob = schedule.scheduleJob({ hour: 15, minute: 44 }, async () => {
+        await setupRepo();
+        for (const [workerId, worker] of core.Object.entries(cluster.workers)) {
+            worker.kill();
+        }
+    });
+    return refreshJob;
 }

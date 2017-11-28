@@ -7,26 +7,35 @@
 import * as http from 'http';
 import * as debug from 'debug';
 import * as cluster from 'cluster';
-import * as git from 'simple-git';
+import * as git from 'simple-git/promise';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as schedule from 'node-schedule';
+import { RecurrenceRule } from 'node-schedule';
+import * as core from 'core-js/library';
 
 const numCPUs = 1;
 const debugLogger: debug.IDebugger = debug('Master');
+const refreshJob: schedule.Job = setupRefresh();
 
-setupRepo();
-setupWorkers();
+setupRepo().then(() => setupWorkers());
 
-function setupRepo(): void {
+
+
+async function setupRepo(): Promise<any> {
   let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
 
   let workingDir = path.resolve(os.homedir(), `repo`);
 
   if (!fs.existsSync(workingDir)) {
     fs.mkdirSync(workingDir);
-    git(workingDir).clone(specsRepo, workingDir, '--depth=1');
+    let gitOptions = ['--depth=1'];
+    await git(workingDir).clone(specsRepo, workingDir, gitOptions);
+  } else {
+    await git(workingDir).pull();
   }
+  return Promise.resolve();
 }
 
 function setupWorkers(): void {
@@ -48,4 +57,16 @@ function setupWorkers(): void {
   for (var i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
+}
+
+function setupRefresh(): schedule.Job {
+
+  let refreshJob: schedule.Job = schedule.scheduleJob({ hour: 15, minute: 44 }, async () => {
+    await setupRepo();
+    for (const [workerId, worker] of core.Object.entries(cluster.workers)) {
+      worker.kill();
+    }
+  });
+
+  return refreshJob;
 }
