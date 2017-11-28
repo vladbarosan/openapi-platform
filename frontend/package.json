@@ -1,0 +1,45 @@
+{
+  "name": "openapi-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node dist/bin/www.js",
+    "build": "gulp scripts"
+  },
+  "author": {
+    "name": "Microsoft Corporation",
+    "email": "azsdkteam@microsoft.com",
+    "url": "https://github.com/vladbarosan/openapi-platfrom"
+  },
+  "description": "Frontend service for OpenAPI tooling platform.",
+  "homepage": "https://github.com/vladbarosan/openapi-platfrom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vladbarosan/openapi-platfrom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vladbarosan/openapi-platfrom/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "~1.18.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "express": "~4.15.5",
+    "morgan": "~1.9.0",
+    "pug": "2.0.0-beta11",
+    "serve-favicon": "~2.4.5"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.16.8",
+    "@types/cookie-parser": "^1.4.1",
+    "@types/debug": "0.0.30",
+    "@types/express": "^4.0.39",
+    "@types/morgan": "^1.7.35",
+    "@types/pug": "^2.0.4",
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^3.2.3",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.6.2"
+  }
+}
