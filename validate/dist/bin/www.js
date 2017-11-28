@@ -1,70 +1,38 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const http = require("http");
 const debug = require("debug");
-const app_1 = require("../app");
-/**
- * Get port from environment and store in Express.
- */
-var port = normalizePort(process.env.PORT || '5002');
-app_1.default.set('port', port);
-/**
- * Create HTTP server.
- */
-var server = http.createServer(app_1.default);
-/**
- * Listen on provided port, on all network interfaces.
- */
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-/**
- * Normalize a port into a number, string, or false.
- */
-function normalizePort(val) {
-    let port = (typeof val === 'string') ? parseInt(val, 10) : val;
-    if (isNaN(port)) {
-        // named pipe
-        return val;
-    }
-    if (port >= 0) {
-        // port number
-        return port;
-    }
-    return false;
-}
-/**
- * Event listener for HTTP server "error" event.
- */
-function onError(error) {
-    if (error.syscall !== 'listen') {
-        throw error;
-    }
-    var bind = typeof port === 'string'
-        ? 'Pipe ' + port
-        : 'Port ' + port;
-    // handle specific listen errors with friendly messages
-    switch (error.code) {
-        case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
-            process.exit(1);
-            break;
-        case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
-            process.exit(1);
-            break;
-        default:
-            throw error;
+const cluster = require("cluster");
+const git = require("simple-git");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const numCPUs = 1;
+const debugLogger = debug('Master');
+setupRepo();
+setupWorkers();
+function setupRepo() {
+    let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
+    let workingDir = path.resolve(os.homedir(), `repo`);
+    if (!fs.existsSync(workingDir)) {
+        fs.mkdirSync(workingDir);
+        git(workingDir).clone(specsRepo, workingDir, '--depth=1');
     }
 }
-/**
- * Event listener for HTTP server "listening" event.
- */
-function onListening() {
-    var addr = server.address();
-    var bind = typeof addr === 'string'
-        ? 'pipe ' + addr
-        : 'port ' + addr.port;
-    debug('Listening on ' + bind);
+function setupWorkers() {
+    cluster.setupMaster({
+        exec: 'dist\\lib\\worker.js',
+        silent: false
+    });
+    // Check that workers are online
+    cluster.on('online', (worker) => {
+        debugLogger(`The worker ${worker.id} responded after it was forked`);
+    });
+    cluster.on('exit', (worker, code, signal) => {
+        debugLogger(`worker ${worker.process.pid} died`);
+        cluster.fork();
+    });
+    for (var i = 0; i < numCPUs; i++) {
+        cluster.fork();
+    }
 }

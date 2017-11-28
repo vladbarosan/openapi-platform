@@ -8,7 +8,8 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Validate service",
-            "program": "${workspaceFolder}\\validate\\bin\\www"
+            "program": "${workspaceFolder}\\validate\\dist\\bin\\www",
+            "sourceMaps": true
         },
         {
             "type": "node",

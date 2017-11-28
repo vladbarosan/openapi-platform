@@ -1,19 +1,24 @@
 import * as express from "express";
 import * as path from 'path';
-import * as favicon from 'serve-favicon';
 import * as logger from 'morgan';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
+import * as os from 'os';
 
-import Index from './routes/index';
+import Boot from './routes/index';
+import { Router } from "express";
 
 class App {
   public express: express.Application;
-
   constructor() {
     this.express = express();
     this.middleware();
-    this.routes();
+  }
+
+  public async Bootstrap(): Promise<void> {
+    let router: Router = await Boot();
+    this.routes(router);
+    return Promise.resolve();
   }
 
   private middleware(): void {
@@ -29,9 +34,9 @@ class App {
   }
 
   // Configure API endpoints.
-  private routes(): void {
+  private routes(Router: Router): void {
 
-    this.express.use('/', Index);
+    this.express.use('/', Router);
 
     // catch 404 and forward to error handler
     this.express.use((req, res, next) => {
@@ -53,4 +58,4 @@ class App {
   }
 }
 
-export default new App().express;
+export default new App();

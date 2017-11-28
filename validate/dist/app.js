@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
 const path = require("path");
@@ -10,7 +18,13 @@ class App {
     constructor() {
         this.express = express();
         this.middleware();
-        this.routes();
+    }
+    Bootstrap() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let router = yield index_1.default();
+            this.routes(router);
+            return Promise.resolve();
+        });
     }
     middleware() {
         // view engine setup
@@ -23,8 +37,8 @@ class App {
         this.express.use(express.static(path.join(__dirname, '../public')));
     }
     // Configure API endpoints.
-    routes() {
-        this.express.use('/', index_1.default);
+    routes(Router) {
+        this.express.use('/', Router);
         // catch 404 and forward to error handler
         this.express.use((req, res, next) => {
             var err = new Error('Not Found');
@@ -42,4 +56,4 @@ class App {
         });
     }
 }
-exports.default = new App().express;
+exports.default = new App();

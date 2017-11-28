@@ -6,86 +6,46 @@
 
 import * as http from 'http';
 import * as debug from 'debug';
+import * as cluster from 'cluster';
+import * as git from 'simple-git';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
-import App from '../app';
+const numCPUs = 1;
+const debugLogger: debug.IDebugger = debug('Master');
 
-/**
- * Get port from environment and store in Express.
- */
+setupRepo();
+setupWorkers();
 
-var port = normalizePort(process.env.PORT || '5002');
-App.set('port', port);
+function setupRepo(): void {
+  let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
 
-/**
- * Create HTTP server.
- */
+  let workingDir = path.resolve(os.homedir(), `repo`);
 
-var server = http.createServer(App);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val: number | string): number | string | boolean {
-  let port: number = (typeof val === 'string') ? parseInt(val, 10) : val;
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
-
-/**
- * Event listener for HTTP server "error" event.
- */
-
-function onError(error: NodeJS.ErrnoException): void {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
+  if (!fs.existsSync(workingDir)) {
+    fs.mkdirSync(workingDir);
+    git(workingDir).clone(specsRepo, workingDir, '--depth=1');
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
+function setupWorkers(): void {
+  cluster.setupMaster({
+    exec: 'dist\\lib\\worker.js',
+    silent: false
+  });
 
-function onListening(): void {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  // Check that workers are online
+  cluster.on('online', (worker) => {
+    debugLogger(`The worker ${worker.id} responded after it was forked`);
+  });
+
+  cluster.on('exit', (worker, code, signal) => {
+    debugLogger(`worker ${worker.process.pid} died`);
+    cluster.fork();
+  });
+
+  for (var i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
 }
