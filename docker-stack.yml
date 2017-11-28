@@ -1,0 +1,46 @@
+version: '3'
+services:
+  frontend:
+    image: vladbarosan/openapi-platform_frontend
+    deploy:
+      replicas: 1
+    ports:
+      - '80:5001'
+    networks:
+      - webnet
+  validate:
+    image: vladbarosan/openapi-platform_validate
+    deploy:
+      replicas: 2
+    ports:
+      - '5002:5002'
+    networks:
+      - webnet
+  validation-worker:
+    image: vladbarosan/openapi-platform_validation-worker
+    deploy:
+      replicas: 2
+    ports:
+      - '5003:5003'
+    networks:
+      - webnet
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+    networks:
+      - webnet
+  visualizer:
+    image: 'dockersamples/visualizer:stable'
+    ports:
+      - '8080:8080'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - webnet
+networks:
+  webnet: null
