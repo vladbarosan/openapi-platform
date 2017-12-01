@@ -6,86 +6,34 @@
 
 import * as http from 'http';
 import * as debug from 'debug';
-
-import App from '../app';
+import * as cluster from 'cluster';
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5003');
-App.set('port', port);
+const numWorkers: number = parseInt(process.env['WORKERS']) || 1;
+const debugLogger: debug.IDebugger = debug('Master');
 
-/**
- * Create HTTP server.
- */
+setupWorkers(numWorkers);
 
-var server = http.createServer(App);
+function setupWorkers(numWorkers: number): void {
+  cluster.setupMaster({
+    exec: 'dist\\lib\\worker.js',
+    silent: false
+  });
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+  // Check that workers are online
+  cluster.on('online', (worker) => {
+    debugLogger(`The worker ${worker.id} responded after it was forked`);
+  });
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+  cluster.on('exit', (worker, code, signal) => {
+    debugLogger(`worker ${worker.process.pid} died`);
+    cluster.fork();
+  });
 
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val: number | string): number | string | boolean {
-  let port: number = (typeof val === 'string') ? parseInt(val, 10) : val;
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
+  for (var i = 0; i < numWorkers; i++) {
+    cluster.fork();
   }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
-
-/**
- * Event listener for HTTP server "error" event.
- */
-
-function onError(error: NodeJS.ErrnoException): void {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-function onListening(): void {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
 }

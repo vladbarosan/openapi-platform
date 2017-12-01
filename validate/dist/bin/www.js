@@ -9,9 +9,15 @@ const path = require("path");
 const os = require("os");
 const schedule = require("node-schedule");
 const core = require("core-js/library");
-const numCPUs = 1;
+const redis = require("redis");
+const numWorkers = parseInt(process.env['WORKERS']) || 1;
 const debugLogger = debug('Master');
 const refreshJob = setupRefresh();
+const redisClient = redis.createClient({
+    host: (process.env['REDIS'] === undefined ? "openapi-platform-intagent.westus2.cloudapp.azure.com" : process.env['REDIS']),
+    port: 6379
+});
+redisClient.set("dsadassa", "value");
 setupRepo().then(() => setupWorkers());
 async function setupRepo() {
     let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
@@ -39,7 +45,7 @@ function setupWorkers() {
         debugLogger(`worker ${worker.process.pid} died`);
         cluster.fork();
     });
-    for (var i = 0; i < numCPUs; i++) {
+    for (var i = 0; i < numWorkers; i++) {
         cluster.fork();
     }
 }

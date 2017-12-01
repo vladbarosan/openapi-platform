@@ -12,6 +12,10 @@ services:
     image: vladbarosan/openapi-platform_validate
     deploy:
       replicas: 2
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      WORKERS: 2
     ports:
       - '5002:5002'
     networks:
@@ -20,6 +24,10 @@ services:
     image: vladbarosan/openapi-platform_validation-worker
     deploy:
       replicas: 2
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      WORKERS: 2
     ports:
       - '5003:5003'
     networks:

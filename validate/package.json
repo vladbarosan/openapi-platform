@@ -24,6 +24,7 @@
   "dependencies": {
     "@types/core-js": "^0.9.43",
     "@types/node-schedule": "^1.2.1",
+    "@types/redis": "^2.8.1",
     "applicationinsights": "^1.0.0",
     "azure-storage": "^2.6.0",
     "body-parser": "~1.18.2",
@@ -31,11 +32,13 @@
     "core-js": "^2.5.1",
     "debug": "~2.6.9",
     "express": "~4.15.5",
+    "install": "^0.10.2",
     "lodash": "^4.17.4",
     "morgan": "~1.9.0",
     "node-schedule": "^1.2.5",
     "oav": "Azure/oav#master",
     "pug": "2.0.0-beta11",
+    "redis": "^2.8.0",
     "simple-git": "^1.82.0"
   },
   "devDependencies": {

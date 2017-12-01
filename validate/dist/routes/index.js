@@ -4,6 +4,7 @@ const express_1 = require("express");
 const path = require("path");
 const os = require("os");
 const debug = require("debug");
+const redis = require("redis");
 const oav = require('oav');
 const debugLogger = debug(`Worker3`);
 let router = express_1.Router();
@@ -16,6 +17,13 @@ const liveValidatorOptions = {
 };
 const apiValidator = new oav.LiveValidator(liveValidatorOptions);
 const ErrorCodes = oav.Constants.ErrorCodes;
+const redisAllRequestsChannel = process.env['REDIS_CHANNEL'] || "allValidationRequests";
+const redisClient = redis.createClient({
+    host: process.env['REDIS_HOST'] || "127.0.0.1",
+    port: parseInt(process.env['REDIS_PORT']) || 6379,
+});
+debugLogger(JSON.stringify(redisClient.config));
+debugLogger(`This is the host: `);
 async function Bootstrap() {
     await apiValidator.initialize();
     /* GET home page. */
@@ -24,6 +32,7 @@ async function Bootstrap() {
     });
     /* POST validate endpoint. */
     router.post('/validate', function (req, res, next) {
+        redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
         let validationResult = apiValidator.validateLiveRequestResponse(req.body);
         // Something went wrong
         if (validationResult && validationResult.errors && Array.isArray(validationResult.errors) && validationResult.errors.length) {

@@ -15,13 +15,11 @@ import * as schedule from 'node-schedule';
 import { RecurrenceRule } from 'node-schedule';
 import * as core from 'core-js/library';
 
-const numCPUs = 1;
+const numWorkers = parseInt(process.env['WORKERS']) || 1;
 const debugLogger: debug.IDebugger = debug('Master');
 const refreshJob: schedule.Job = setupRefresh();
 
-setupRepo().then(() => setupWorkers());
-
-
+setupRepo().then(() => setupWorkers(numWorkers));
 
 async function setupRepo(): Promise<any> {
   let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
@@ -38,7 +36,7 @@ async function setupRepo(): Promise<any> {
   return Promise.resolve();
 }
 
-function setupWorkers(): void {
+function setupWorkers(numWorkers: number): void {
   cluster.setupMaster({
     exec: 'dist\\lib\\worker.js',
     silent: false
@@ -54,7 +52,7 @@ function setupWorkers(): void {
     cluster.fork();
   });
 
-  for (var i = 0; i < numCPUs; i++) {
+  for (var i = 0; i < numWorkers; i++) {
     cluster.fork();
   }
 }
