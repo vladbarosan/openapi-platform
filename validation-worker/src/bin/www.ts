@@ -19,7 +19,7 @@ setupWorkers(numWorkers);
 
 function setupWorkers(numWorkers: number): void {
   cluster.setupMaster({
-    exec: 'dist\\lib\\worker.js',
+    exec: 'dist/lib/worker.js',
     silent: false
   });
 

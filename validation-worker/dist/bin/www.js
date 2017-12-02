@@ -11,7 +11,7 @@ const debugLogger = debug('Master');
 setupWorkers(numWorkers);
 function setupWorkers(numWorkers) {
     cluster.setupMaster({
-        exec: 'dist\\lib\\worker.js',
+        exec: 'dist/lib/worker.js',
         silent: false
     });
     // Check that workers are online

@@ -36,7 +36,7 @@ class App {
   // Configure API endpoints.
   private routes(Router: Router): void {
 
-    this.express.use('/', Router);
+    this.express.use('/api', Router);
 
     // catch 404 and forward to error handler
     this.express.use((req, res, next) => {

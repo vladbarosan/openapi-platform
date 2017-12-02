@@ -14,6 +14,7 @@ const debug = require("debug");
 const redis = require("redis");
 const onDeath = require("death");
 const util_1 = require("../lib/util");
+const util = require("../lib/util");
 const url = require("url");
 let router = express_1.Router();
 const maxConcurrentValidations = 50;
@@ -32,7 +33,7 @@ redisClient.on("message", (channel, message) => {
     let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
     let path = parsedUrl.pathname;
     let apiVersion = parsedUrl.query['api-version'];
-    let resourceProvider = this.getProvider(path);
+    let resourceProvider = util.getProvider(path);
     validationModels.forEach((model, id, map) => {
         if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
             return;
@@ -40,10 +41,14 @@ redisClient.on("message", (channel, message) => {
         let validationResult = model.validate(requestResponsePair);
         const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
             && validationResult.responseValidationResult.successfulResponse;
-        let SeverityLevel = isOperationSuccessful ? 1 : 3;
+        let SeverityLevel = isOperationSuccessful ? 4 : 3;
         let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
-        util_1.AppInsightsClient.trackTrace(JSON.stringify(validationResult), SeverityLevel, {
-            'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+        util_1.AppInsightsClient.trackTrace({
+            message: JSON.stringify(validationResult),
+            severity: SeverityLevel,
+            properties: {
+                'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+            }
         });
     });
 });
@@ -93,6 +98,7 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
     validationModels.set(model.validationId, model);
     setTimeout(() => {
         validationModels.delete(model.validationId);
+        util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { type: "service" });
     }, durationInSeconds * 1000);
     res.status(200).send({ validationId: model.validationId });
 }));

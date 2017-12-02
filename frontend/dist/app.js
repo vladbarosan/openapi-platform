@@ -26,7 +26,7 @@ class App {
     // Configure API endpoints.
     routes() {
         this.express.use('/', index_1.default);
-        this.express.use('/validations', validations_1.default);
+        this.express.use('/api/validations', validations_1.default);
         // catch 404 and forward to error handler
         this.express.use((req, res, next) => {
             var err = new Error('Not Found');

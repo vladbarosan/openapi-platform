@@ -32,7 +32,7 @@ class App {
   private routes(): void {
 
     this.express.use('/', Index);
-    this.express.use('/validations', Validations);
+    this.express.use('/api/validations', Validations);
 
     // catch 404 and forward to error handler
     this.express.use((req, res, next) => {

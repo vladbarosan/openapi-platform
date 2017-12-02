@@ -6,6 +6,7 @@ import * as redis from 'redis';
 import { RedisClient } from 'redis';
 import * as onDeath from 'death';
 import { AppInsightsClient } from '../lib/util';
+import * as util from '../lib/util';
 import * as url from 'url';
 
 let router = Router();
@@ -33,7 +34,7 @@ redisClient.on("message", (channel, message) => {
   let path = parsedUrl.pathname;
 
   let apiVersion = parsedUrl.query['api-version'];
-  let resourceProvider = this.getProvider(path);
+  let resourceProvider = util.getProvider(path);
 
   validationModels.forEach((model, id, map) => {
 
