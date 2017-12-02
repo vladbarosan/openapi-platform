@@ -5,6 +5,8 @@ import * as debug from 'debug';
 import * as redis from 'redis';
 import { RedisClient } from 'redis';
 import * as onDeath from 'death';
+import { AppInsightsClient } from '../lib/util';
+import * as url from 'url';
 
 let router = Router();
 const maxConcurrentValidations = 50;
@@ -27,8 +29,32 @@ redisClient.on("message", (channel, message) => {
     return;
   }
 
+  let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+  let path = parsedUrl.pathname;
+
+  let apiVersion = parsedUrl.query['api-version'];
+  let resourceProvider = this.getProvider(path);
+
   validationModels.forEach((model, id, map) => {
-    model.validate(requestResponsePair);
+
+    if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
+      return;
+    }
+
+    let validationResult = model.validate(requestResponsePair);
+
+    const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
+      && validationResult.responseValidationResult.successfulResponse;
+
+    let SeverityLevel = isOperationSuccessful ? 4 : 3;
+    let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+    AppInsightsClient.trackTrace({
+      message: JSON.stringify(validationResult),
+      severity: SeverityLevel,
+      properties: {
+        'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+      }
+    });
   });
 });
 
@@ -94,6 +120,8 @@ router.post('/', async (req, res, next) => {
 
   setTimeout(() => {
     validationModels.delete(model.validationId);
+
+    AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { type: "service" });
   }, durationInSeconds * 1000);
 
   res.status(200).send({ validationId: model.validationId });

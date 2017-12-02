@@ -5,8 +5,9 @@ const path = require("path");
 const os = require("os");
 const debug = require("debug");
 const redis = require("redis");
+const util_1 = require("../lib/util");
 const oav = require('oav');
-const debugLogger = debug(`Worker3`);
+const debugLogger = debug(`Index`);
 let router = express_1.Router();
 const liveValidatorOptions = {
     git: {
@@ -22,8 +23,6 @@ const redisClient = redis.createClient({
     host: process.env['REDIS_HOST'] || "127.0.0.1",
     port: parseInt(process.env['REDIS_PORT']) || 6379,
 });
-debugLogger(JSON.stringify(redisClient.config));
-debugLogger(`This is the host: `);
 async function Bootstrap() {
     await apiValidator.initialize();
     /* GET home page. */
@@ -34,6 +33,17 @@ async function Bootstrap() {
     router.post('/validate', function (req, res, next) {
         redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
         let validationResult = apiValidator.validateLiveRequestResponse(req.body);
+        const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
+            && validationResult.responseValidationResult.successfulResponse;
+        let SeverityLevel = isOperationSuccessful ? 4 : 3;
+        let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        util_1.AppInsightsClient.trackTrace({
+            message: JSON.stringify(validationResult),
+            severity: SeverityLevel,
+            properties: {
+                'validationId': 'ARM', 'operationId': operationId, 'isSuccess': isOperationSuccessful
+            }
+        });
         // Something went wrong
         if (validationResult && validationResult.errors && Array.isArray(validationResult.errors) && validationResult.errors.length) {
             let errors = validationResult.errors;

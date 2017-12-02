@@ -22,10 +22,11 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@types/applicationinsights": "^0.15.34",
     "@types/core-js": "^0.9.43",
     "@types/node-schedule": "^1.2.1",
     "@types/redis": "^2.8.1",
-    "applicationinsights": "^1.0.0",
+    "applicationinsights": "^1.0.1",
     "azure-storage": "^2.6.0",
     "body-parser": "~1.18.2",
     "cookie-parser": "~1.4.3",

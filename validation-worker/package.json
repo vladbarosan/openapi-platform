@@ -22,10 +22,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@types/applicationinsights": "^0.15.34",
     "@types/fs-extra": "^4.0.5",
     "@types/lodash": "^4.14.86",
     "@types/redis": "^2.8.1",
     "@types/uuid": "^3.4.3",
+    "applicationinsights": "^1.0.1",
     "body-parser": "~1.18.2",
     "cookie-parser": "~1.4.3",
     "death": "^1.1.0",

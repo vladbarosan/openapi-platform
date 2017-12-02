@@ -9,16 +9,10 @@ const path = require("path");
 const os = require("os");
 const schedule = require("node-schedule");
 const core = require("core-js/library");
-const redis = require("redis");
 const numWorkers = parseInt(process.env['WORKERS']) || 1;
 const debugLogger = debug('Master');
 const refreshJob = setupRefresh();
-const redisClient = redis.createClient({
-    host: (process.env['REDIS'] === undefined ? "openapi-platform-intagent.westus2.cloudapp.azure.com" : process.env['REDIS']),
-    port: 6379
-});
-redisClient.set("dsadassa", "value");
-setupRepo().then(() => setupWorkers());
+setupRepo().then(() => setupWorkers(numWorkers));
 async function setupRepo() {
     let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
     let workingDir = path.resolve(os.homedir(), `repo`);
@@ -32,7 +26,7 @@ async function setupRepo() {
     }
     return Promise.resolve();
 }
-function setupWorkers() {
+function setupWorkers(numWorkers) {
     cluster.setupMaster({
         exec: 'dist\\lib\\worker.js',
         silent: false

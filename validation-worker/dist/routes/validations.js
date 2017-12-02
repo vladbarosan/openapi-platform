@@ -13,6 +13,8 @@ const validationModel_1 = require("../lib/validationModel");
 const debug = require("debug");
 const redis = require("redis");
 const onDeath = require("death");
+const util_1 = require("../lib/util");
+const url = require("url");
 let router = express_1.Router();
 const maxConcurrentValidations = 50;
 const debugLogger = debug(`Worker:1`);
@@ -23,16 +25,26 @@ const redisClient = redis.createClient({
     port: parseInt(process.env['REDIS_PORT']) || 6379,
 });
 redisClient.on("message", (channel, message) => {
-    debugLogger(`got message ${message}`);
     let requestResponsePair = JSON.parse(message);
     if (requestResponsePair === undefined) {
         return;
     }
-    debugLogger(`got pair is ${requestResponsePair}`);
-    debugLogger(`size of models ${validationModels.size}`);
+    let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+    let path = parsedUrl.pathname;
+    let apiVersion = parsedUrl.query['api-version'];
+    let resourceProvider = this.getProvider(path);
     validationModels.forEach((model, id, map) => {
-        debugLogger(`sending to ${model.validationId}`);
-        debugLogger(model.validate(requestResponsePair));
+        if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
+            return;
+        }
+        let validationResult = model.validate(requestResponsePair);
+        const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
+            && validationResult.responseValidationResult.successfulResponse;
+        let SeverityLevel = isOperationSuccessful ? 1 : 3;
+        let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        util_1.AppInsightsClient.trackTrace(JSON.stringify(validationResult), SeverityLevel, {
+            'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+        });
     });
 });
 onDeath((signal, err) => {

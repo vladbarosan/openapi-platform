@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as path from 'path';
-import * as os from 'os';
+import * as os from 'os'
 import * as debug from 'debug';
 import * as redis from 'redis';
-
+import { AppInsightsClient } from '../lib/util'
 const oav = require('oav');
 
 const debugLogger: debug.IDebugger = debug(`Index`);
@@ -25,8 +25,6 @@ const redisClient = redis.createClient({
   host: process.env['REDIS_HOST'] || "127.0.0.1",
   port: parseInt(process.env['REDIS_PORT']) || 6379,
 });
-debugLogger(JSON.stringify(redisClient.config));
-debugLogger(`This is the host: `);
 
 async function Bootstrap(): Promise<Router> {
   await apiValidator.initialize();
@@ -41,6 +39,21 @@ async function Bootstrap(): Promise<Router> {
 
     redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
     let validationResult = apiValidator.validateLiveRequestResponse(req.body);
+
+    const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
+      && validationResult.responseValidationResult.successfulResponse;
+
+    let SeverityLevel = isOperationSuccessful ? 4 : 3;
+    let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+
+
+    AppInsightsClient.trackTrace({
+      message: JSON.stringify(validationResult),
+      severity: SeverityLevel,
+      properties: {
+        'validationId': 'ARM', 'operationId': operationId, 'isSuccess': isOperationSuccessful
+      }
+    });
 
     // Something went wrong
     if (validationResult && validationResult.errors && Array.isArray(validationResult.errors) && validationResult.errors.length) {

@@ -4,6 +4,8 @@ services:
     image: vladbarosan/openapi-platform_frontend
     deploy:
       replicas: 1
+    environment:
+      APPINSIGHTS_INSTRUMENTATIONKEY: 40dcf1c8-3f9d-451c-a04e-f596ddf7f091
     ports:
       - '80:5001'
     networks:
@@ -16,6 +18,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
+      APPINSIGHTS_INSTRUMENTATIONKEY: 40dcf1c8-3f9d-451c-a04e-f596ddf7f091
     ports:
       - '5002:5002'
     networks:
@@ -28,6 +31,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
+      APPINSIGHTS_INSTRUMENTATIONKEY: 40dcf1c8-3f9d-451c-a04e-f596ddf7f091
+      AZURE_STORAGE_CONNECTION_STRING: <CONN_STRING>
     ports:
       - '5003:5003'
     networks:
