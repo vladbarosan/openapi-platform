@@ -7,4 +7,8 @@ applicationinsights.setup()
     .setAutoCollectExceptions(true)
     .start();
 applicationinsights.defaultClient.context.tags["ai.cloud.role"] = "frontend";
+exports.AsyncMiddleware = fn => (req, res, next) => {
+    Promise.resolve(fn(req, res, next))
+        .catch(next);
+};
 exports.AppInsightsClient = applicationinsights.defaultClient;

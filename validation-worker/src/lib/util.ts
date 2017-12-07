@@ -7,7 +7,7 @@ applicationinsights.setup()
     .setAutoCollectExceptions(true)
     .start();
 
-applicationinsights.defaultClient.context.tags["ai.cloud.role"] = "validation-worker";
+applicationinsights.defaultClient.context.tags["ai.cloud.role"] = "validationworker";
 
 /**
 /*

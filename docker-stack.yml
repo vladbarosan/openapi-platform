@@ -5,7 +5,8 @@ services:
     deploy:
       replicas: 1
     environment:
-      APPINSIGHTS_INSTRUMENTATIONKEY: <INTRUMENTATION_KEY>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
+      VALIDATION_WORKER_URI: 'http://validation-worker:5003'
     ports:
       - '80:5001'
     networks:
@@ -18,7 +19,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
-      APPINSIGHTS_INSTRUMENTATIONKEY: <INTRUMENTATION_KEY>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
     ports:
       - '8080:5002'
     networks:
@@ -31,7 +32,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
-      APPINSIGHTS_INSTRUMENTATIONKEY: <INTRUMENTATION_KEY>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
       AZURE_STORAGE_CONNECTION_STRING: <CONN_STRING>
     ports:
       - '5003:5003'

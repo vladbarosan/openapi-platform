@@ -3,7 +3,6 @@ import * as cluster from 'cluster';
 import ValidationModel from '../lib/validationModel';
 import * as debug from 'debug';
 import * as redis from 'redis';
-import { RedisClient } from 'redis';
 import * as onDeath from 'death';
 import { AppInsightsClient } from '../lib/util';
 import * as util from '../lib/util';
@@ -12,7 +11,6 @@ import * as url from 'url';
 let router = Router();
 const maxConcurrentValidations = 50;
 const debugLogger: debug.IDebugger = debug(`Worker:1`);
-
 
 let validationModels: Map<string, ValidationModel> = new Map();
 

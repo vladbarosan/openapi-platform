@@ -15,19 +15,29 @@
             "request": "launch",
             "name": "Launch Validate service",
             "program": "${workspaceFolder}\\validate\\dist\\bin\\www",
-            "sourceMaps": true
+            "sourceMaps": true,
+            "env": {
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "<APP_KEY>"
+            }
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Launch Frontend service",
-            "program": "${workspaceFolder}\\frontend\\bin\\www"
+            "program": "${workspaceFolder}\\frontend\\dist\\bin\\www",
+            "sourceMaps": true,
+            "env": {
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "<APP_KEY>"
+            }
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Launch Worker service",
-            "program": "${workspaceFolder}\\worker\\bin\\www"
+            "program": "${workspaceFolder}\\worker\\dist\\bin\\www",
+            "env": {
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "<APP_KEY>"
+            }
         }
     ]
 }

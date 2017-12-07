@@ -6,7 +6,7 @@ applicationinsights.setup()
     .setAutoCollectPerformance(true)
     .setAutoCollectExceptions(true)
     .start();
-applicationinsights.defaultClient.context.tags["ai.cloud.role"] = "validation-worker";
+applicationinsights.defaultClient.context.tags["ai.cloud.role"] = "validationworker";
 /**
 /*
  * Gets provider namespace from the given path. In case of multiple, last one will be returned.
