@@ -1,16 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as cluster from 'cluster';
 import ValidationModel from '../lib/validationModel';
-import * as debug from 'debug';
 import * as redis from 'redis';
 import * as onDeath from 'death';
-import { AppInsightsClient } from '../lib/util';
+import { AppInsightsClient, DebugLogger } from '../lib/util';
 import * as util from '../lib/util';
 import * as url from 'url';
 
 let router = Router();
 const maxConcurrentValidations = 50;
-const debugLogger: debug.IDebugger = debug(`Worker:1`);
 
 let validationModels: Map<string, ValidationModel> = new Map();
 
@@ -24,6 +22,8 @@ const redisClient = redis.createClient({
 redisClient.on("message", (channel, message) => {
   let requestResponsePair: any = JSON.parse(message);
 
+  DebugLogger(`Processing message ${message}`)
+
   if (requestResponsePair === undefined) {
     return;
   }
@@ -35,23 +35,29 @@ redisClient.on("message", (channel, message) => {
   let resourceProvider = util.getProvider(path);
 
   validationModels.forEach((model, id, map) => {
+    DebugLogger(`Processing model with id: ${id}`);
 
     if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
       return;
     }
 
     let validationResult = model.validate(requestResponsePair);
-
     const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
       && validationResult.responseValidationResult.successfulResponse;
 
     let SeverityLevel = isOperationSuccessful ? 4 : 3;
     let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+
     AppInsightsClient.trackTrace({
       message: JSON.stringify(validationResult),
       severity: SeverityLevel,
       properties: {
-        'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+        'validationId': model.validationId,
+        'operationId': operationId,
+        'isSuccess': isOperationSuccessful,
+        "resourceProvider": model.resourceProvider,
+        "apiVersion": model.apiVersion,
+        "logType": "data"
       }
     });
   });
@@ -109,18 +115,15 @@ router.post('/', async (req, res, next) => {
     swaggerPathsPattern: validationJsonsPattern,
   };
 
-  debugLogger("pre creation");
 
   let model: ValidationModel = new ValidationModel(modelOptions.resourceProvider, modelOptions.apiVersion, liveValidatorOptions);
-  debugLogger("pre initialize");
   await model.initialize();
-  debugLogger("done initialize");
+  DebugLogger("initialize finished successfully.");
   validationModels.set(model.validationId, model);
 
   setTimeout(() => {
     validationModels.delete(model.validationId);
-
-    AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { type: "service" });
+    AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
   }, durationInSeconds * 1000);
 
   res.status(200).send({ validationId: model.validationId });

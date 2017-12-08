@@ -1,12 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as path from 'path';
 import * as os from 'os'
-import * as debug from 'debug';
 import * as redis from 'redis';
-import { AppInsightsClient } from '../lib/util'
+import { AppInsightsClient, DebugLogger } from '../lib/util'
 const oav = require('oav');
-
-const debugLogger: debug.IDebugger = debug(`Index`);
 
 let router = Router();
 

@@ -2,7 +2,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const http = require("http");
-const debug = require("debug");
+const util_1 = require("../lib/util");
 const app_1 = require("../app");
 /**
  * Get port from environment and store in Express.
@@ -47,11 +47,11 @@ function onError(error) {
     // handle specific listen errors with friendly messages
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            util_1.DebugLogger(bind + ' requires elevated privileges');
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            util_1.DebugLogger(bind + ' is already in use');
             process.exit(1);
             break;
         default:
@@ -66,5 +66,5 @@ function onListening() {
     var bind = typeof addr === 'string'
         ? 'pipe ' + addr
         : 'port ' + addr.port;
-    debug('Listening on ' + bind);
+    util_1.DebugLogger(`Listening on ${bind}`);
 }

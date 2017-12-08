@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const debug = require("debug");
 const cluster = require("cluster");
+const util_1 = require("../lib/util");
 /**
  * Get port from environment and store in Express.
  */
 const numWorkers = parseInt(process.env['WORKERS']) || 1;
-const debugLogger = debug('Master');
 setupWorkers(numWorkers);
 function setupWorkers(numWorkers) {
     cluster.setupMaster({
@@ -16,10 +15,10 @@ function setupWorkers(numWorkers) {
     });
     // Check that workers are online
     cluster.on('online', (worker) => {
-        debugLogger(`The worker ${worker.id} responded after it was forked`);
+        util_1.DebugLogger(`The worker ${worker.id} responded after it was forked`);
     });
     cluster.on('exit', (worker, code, signal) => {
-        debugLogger(`worker ${worker.process.pid} died`);
+        util_1.DebugLogger(`worker ${worker.process.pid} died`);
         cluster.fork();
     });
     for (var i = 0; i < numWorkers; i++) {

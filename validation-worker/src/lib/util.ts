@@ -1,5 +1,6 @@
 
 const applicationinsights = require('applicationinsights');
+import * as debug from 'debug';
 
 applicationinsights.setup()
     .setAutoCollectRequests(true)
@@ -36,4 +37,5 @@ export function getProvider(path: string): string {
     return result;
 };
 
-export let AppInsightsClient = applicationinsights.defaultClient;
+export const AppInsightsClient = applicationinsights.defaultClient;
+export const DebugLogger: debug.IDebugger = debug(`ValidationWorker`);

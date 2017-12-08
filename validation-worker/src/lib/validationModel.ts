@@ -3,9 +3,8 @@ import * as path from 'path';
 import * as os from 'os';
 import * as debug from "debug"
 import * as fs from 'fs-extra';
-
+import { AppInsightsClient, DebugLogger } from '../lib/util';
 const oav = require('oav');
-const debugLogger: debug.IDebugger = debug(`Worker:ValidationModel`);
 
 /**
  * @class
@@ -27,6 +26,8 @@ class ValidationModel {
      */
     constructor(resourceProvider: string, apiVersion: string, validatorOptions: any) {
         this.validationId = uuidv4();
+        this.apiVersion = apiVersion;
+        this.resourceProvider = resourceProvider;
         this.directory = path.resolve(os.homedir(), `repo-${this.validationId}`);
         validatorOptions.directory = this.directory;
         this.validator = new oav.LiveValidator(validatorOptions);

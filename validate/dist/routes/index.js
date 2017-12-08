@@ -3,11 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const path = require("path");
 const os = require("os");
-const debug = require("debug");
 const redis = require("redis");
 const util_1 = require("../lib/util");
 const oav = require('oav');
-const debugLogger = debug(`Index`);
 let router = express_1.Router();
 const liveValidatorOptions = {
     git: {

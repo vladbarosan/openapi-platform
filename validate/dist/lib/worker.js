@@ -1,14 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const http = require("http");
-const debug = require("debug");
-const cluster = require("cluster");
 const app_1 = require("../app");
+const util_1 = require("../lib/util");
 /**
  * Get port from environment and store in Express.
  */
 let port = normalizePort(process.env.PORT || '5002');
-const debugLogger = debug(`Worker:${cluster.worker.id}`);
 app_1.default.express.set('port', port);
 /**
  * Create HTTP server.
@@ -50,11 +48,11 @@ function onError(error) {
     // handle specific listen errors with friendly messages
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            util_1.DebugLogger(`${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            util_1.DebugLogger(`${bind} is already in use`);
             process.exit(1);
             break;
         default:
@@ -69,5 +67,5 @@ function onListening() {
     let bind = typeof addr === 'string'
         ? 'pipe ' + addr
         : 'port ' + addr.port;
-    debugLogger('Listening on ' + bind);
+    util_1.DebugLogger('Listening on ' + bind);
 }

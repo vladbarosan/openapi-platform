@@ -1,12 +1,10 @@
 import * as http from 'http';
-import * as debug from 'debug';
 import * as cluster from 'cluster';
 import * as redis from 'redis';
+import { AppInsightsClient, DebugLogger } from '../lib/util';
 import App from '../app';
 
 const oav = require('oav');
-
-const debugLogger: debug.IDebugger = debug(`Worker:${cluster.worker.id}`);
 let port = normalizePort(process.env.PORT || '5003');
 
 App.set('port', port);
@@ -59,11 +57,11 @@ function onError(error: NodeJS.ErrnoException): void {
     // handle specific listen errors with friendly messages
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            DebugLogger(`${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            DebugLogger(`${bind} is already in use`);
             process.exit(1);
             break;
         default:
@@ -74,11 +72,10 @@ function onError(error: NodeJS.ErrnoException): void {
 /**
  * Event listener for HTTP server "listening" event.
  */
-
 function onListening(): void {
     let addr = server.address();
     let bind = typeof addr === 'string'
         ? 'pipe ' + addr
         : 'port ' + addr.port;
-    debugLogger('Listening on ' + bind);
+    DebugLogger(`Listening on ${bind}`);
 }

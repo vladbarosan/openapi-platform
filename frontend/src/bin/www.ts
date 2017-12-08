@@ -5,9 +5,10 @@
  */
 
 import * as http from 'http';
-import * as debug from 'debug';
+import { AppInsightsClient, DebugLogger } from '../lib/util';
 
 import App from '../app';
+import { debuglog } from 'util';
 
 /**
  * Get port from environment and store in Express.
@@ -66,11 +67,11 @@ function onError(error: NodeJS.ErrnoException): void {
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      DebugLogger(bind + ' requires elevated privileges');
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      DebugLogger(bind + ' is already in use');
       process.exit(1);
       break;
     default:
@@ -87,5 +88,5 @@ function onListening(): void {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  DebugLogger(`Listening on ${bind}`);
 }

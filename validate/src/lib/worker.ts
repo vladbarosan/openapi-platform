@@ -1,26 +1,22 @@
 import * as http from 'http';
-import * as debug from 'debug';
 import * as cluster from 'cluster';
 import App from '../app';
+import { AppInsightsClient, DebugLogger } from '../lib/util'
 
 /**
  * Get port from environment and store in Express.
  */
-
 let port = normalizePort(process.env.PORT || '5002');
-const debugLogger: debug.IDebugger = debug(`Worker:${cluster.worker.id}`);
 
 App.express.set('port', port);
 /**
  * Create HTTP server.
  */
-
 let server = http.createServer(App.express);
 
 /**
  * Listen on provided port, on all network interfaces.
  */
-
 App.Bootstrap().then(() => {
     server.listen(port);
     server.on('error', onError);
@@ -30,7 +26,6 @@ App.Bootstrap().then(() => {
 /**
  * Normalize a port into a number, string, or false.
  */
-
 function normalizePort(val: number | string): number | string | boolean {
     let port: number = (typeof val === 'string') ? parseInt(val, 10) : val;
 
@@ -50,7 +45,6 @@ function normalizePort(val: number | string): number | string | boolean {
 /**
  * Event listener for HTTP server "error" event.
  */
-
 function onError(error: NodeJS.ErrnoException): void {
     if (error.syscall !== 'listen') {
         throw error;
@@ -63,11 +57,11 @@ function onError(error: NodeJS.ErrnoException): void {
     // handle specific listen errors with friendly messages
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            DebugLogger(`${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            DebugLogger(`${bind} is already in use`);
             process.exit(1);
             break;
         default:
@@ -84,5 +78,5 @@ function onListening(): void {
     let bind = typeof addr === 'string'
         ? 'pipe ' + addr
         : 'port ' + addr.port;
-    debugLogger('Listening on ' + bind);
+    DebugLogger('Listening on ' + bind);
 }

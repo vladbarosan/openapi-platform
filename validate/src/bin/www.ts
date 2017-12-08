@@ -5,7 +5,6 @@
  */
 
 import * as http from 'http';
-import * as debug from 'debug';
 import * as cluster from 'cluster';
 import * as git from 'simple-git/promise';
 import * as fs from 'fs';
@@ -14,9 +13,9 @@ import * as os from 'os';
 import * as schedule from 'node-schedule';
 import { RecurrenceRule } from 'node-schedule';
 import * as core from 'core-js/library';
+import { AppInsightsClient, DebugLogger } from '../lib/util';
 
 const numWorkers = parseInt(process.env['WORKERS']) || 1;
-const debugLogger: debug.IDebugger = debug('Master');
 const refreshJob: schedule.Job = setupRefresh();
 
 setupRepo().then(() => setupWorkers(numWorkers));
@@ -44,11 +43,11 @@ function setupWorkers(numWorkers: number): void {
 
   // Check that workers are online
   cluster.on('online', (worker) => {
-    debugLogger(`The worker ${worker.id} responded after it was forked`);
+    DebugLogger(`The worker ${worker.id} responded after it was forked`);
   });
 
   cluster.on('exit', (worker, code, signal) => {
-    debugLogger(`worker ${worker.process.pid} died`);
+    DebugLogger(`worker ${worker.process.pid} died`);
     cluster.fork();
   });
 

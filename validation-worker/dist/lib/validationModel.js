@@ -11,10 +11,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const uuidv4 = require("uuid/v4");
 const path = require("path");
 const os = require("os");
-const debug = require("debug");
 const fs = require("fs-extra");
 const oav = require('oav');
-const debugLogger = debug(`Worker:ValidationModel`);
 /**
  * @class
  * Model against whcih to validate openapi operations.
@@ -28,6 +26,8 @@ class ValidationModel {
      */
     constructor(resourceProvider, apiVersion, validatorOptions) {
         this.validationId = uuidv4();
+        this.apiVersion = apiVersion;
+        this.resourceProvider = resourceProvider;
         this.directory = path.resolve(os.homedir(), `repo-${this.validationId}`);
         validatorOptions.directory = this.directory;
         this.validator = new oav.LiveValidator(validatorOptions);

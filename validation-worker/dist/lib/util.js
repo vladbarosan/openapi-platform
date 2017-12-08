@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const applicationinsights = require('applicationinsights');
+const debug = require("debug");
 applicationinsights.setup()
     .setAutoCollectRequests(true)
     .setAutoCollectPerformance(true)
@@ -33,3 +34,4 @@ function getProvider(path) {
 exports.getProvider = getProvider;
 ;
 exports.AppInsightsClient = applicationinsights.defaultClient;
+exports.DebugLogger = debug(`ValidationWorker`);

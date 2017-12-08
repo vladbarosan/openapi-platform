@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const validationModel_1 = require("../lib/validationModel");
-const debug = require("debug");
 const redis = require("redis");
 const onDeath = require("death");
 const util_1 = require("../lib/util");
@@ -18,7 +17,6 @@ const util = require("../lib/util");
 const url = require("url");
 let router = express_1.Router();
 const maxConcurrentValidations = 50;
-const debugLogger = debug(`Worker:1`);
 let validationModels = new Map();
 const redisAllRequestsChannel = process.env['REDIS_CHANNEL'] || "allValidationRequests";
 const redisClient = redis.createClient({
@@ -27,6 +25,7 @@ const redisClient = redis.createClient({
 });
 redisClient.on("message", (channel, message) => {
     let requestResponsePair = JSON.parse(message);
+    util_1.DebugLogger(`Processing message ${message}`);
     if (requestResponsePair === undefined) {
         return;
     }
@@ -35,6 +34,7 @@ redisClient.on("message", (channel, message) => {
     let apiVersion = parsedUrl.query['api-version'];
     let resourceProvider = util.getProvider(path);
     validationModels.forEach((model, id, map) => {
+        util_1.DebugLogger(`Processing model with id: ${id}`);
         if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
             return;
         }
@@ -47,7 +47,12 @@ redisClient.on("message", (channel, message) => {
             message: JSON.stringify(validationResult),
             severity: SeverityLevel,
             properties: {
-                'validationId': this.validationId, 'operationId': operationId, 'isSuccess': isOperationSuccessful
+                'validationId': model.validationId,
+                'operationId': operationId,
+                'isSuccess': isOperationSuccessful,
+                "resourceProvider": model.resourceProvider,
+                "apiVersion": model.apiVersion,
+                "logType": "data"
             }
         });
     });
@@ -90,15 +95,13 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
         },
         swaggerPathsPattern: validationJsonsPattern,
     };
-    debugLogger("pre creation");
     let model = new validationModel_1.default(modelOptions.resourceProvider, modelOptions.apiVersion, liveValidatorOptions);
-    debugLogger("pre initialize");
     yield model.initialize();
-    debugLogger("done initialize");
+    util_1.DebugLogger("initialize finished successfully.");
     validationModels.set(model.validationId, model);
     setTimeout(() => {
         validationModels.delete(model.validationId);
-        util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { type: "service" });
+        util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
     }, durationInSeconds * 1000);
     res.status(200).send({ validationId: model.validationId });
 }));

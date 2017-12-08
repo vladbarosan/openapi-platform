@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const debug = require("debug");
 const cluster = require("cluster");
 const git = require("simple-git/promise");
 const fs = require("fs");
@@ -9,8 +8,8 @@ const path = require("path");
 const os = require("os");
 const schedule = require("node-schedule");
 const core = require("core-js/library");
+const util_1 = require("../lib/util");
 const numWorkers = parseInt(process.env['WORKERS']) || 1;
-const debugLogger = debug('Master');
 const refreshJob = setupRefresh();
 setupRepo().then(() => setupWorkers(numWorkers));
 async function setupRepo() {
@@ -33,10 +32,10 @@ function setupWorkers(numWorkers) {
     });
     // Check that workers are online
     cluster.on('online', (worker) => {
-        debugLogger(`The worker ${worker.id} responded after it was forked`);
+        util_1.DebugLogger(`The worker ${worker.id} responded after it was forked`);
     });
     cluster.on('exit', (worker, code, signal) => {
-        debugLogger(`worker ${worker.process.pid} died`);
+        util_1.DebugLogger(`worker ${worker.process.pid} died`);
         cluster.fork();
     });
     for (var i = 0; i < numWorkers; i++) {
