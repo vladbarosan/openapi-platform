@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import * as path from 'path';
 import * as os from 'os'
 import * as redis from 'redis';
+import * as url from 'url';
+import * as util from '../lib/util';
 import { AppInsightsClient, DebugLogger } from '../lib/util'
 const oav = require('oav');
 
@@ -35,6 +37,18 @@ async function Bootstrap(): Promise<Router> {
   router.post('/validate', function (req, res, next) {
 
     redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
+
+    let requestResponsePair: any = req.body;
+
+    if (requestResponsePair === undefined) {
+      return;
+    }
+
+    let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+    let path = parsedUrl.pathname;
+
+    let apiVersion = parsedUrl.query['api-version'];
+    let resourceProvider = util.getProvider(path);
     let validationResult = apiValidator.validateLiveRequestResponse(req.body);
 
     const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
@@ -43,12 +57,16 @@ async function Bootstrap(): Promise<Router> {
     let SeverityLevel = isOperationSuccessful ? 4 : 3;
     let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
 
-
     AppInsightsClient.trackTrace({
       message: JSON.stringify(validationResult),
       severity: SeverityLevel,
       properties: {
-        'validationId': 'ARM', 'operationId': operationId, 'isSuccess': isOperationSuccessful
+        'validationId': 'ARM',
+        'operationId': operationId,
+        'isSuccess': isOperationSuccessful,
+        'resourceProvider': resourceProvider,
+        'apiVersion': apiVersion,
+        'logType': 'data'
       }
     });
 
@@ -64,6 +82,10 @@ async function Bootstrap(): Promise<Router> {
 
     // Return 200 with validationResult
     res.status(200).send(validationResult);
+  });
+
+  router.post('/validateProd', function (req, res, next) {
+    res.status(403).send({ "Message": "Not available yet." })
   });
 
   return router;

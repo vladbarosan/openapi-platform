@@ -5,6 +5,9 @@
  */
 
 import * as http from 'http';
+import * as https from 'https';
+import * as fs from 'fs';
+
 import { AppInsightsClient, DebugLogger } from '../lib/util';
 
 import App from '../app';
@@ -14,14 +17,21 @@ import { debuglog } from 'util';
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5001');
+let port = normalizePort(process.env.PORT || '5001');
 App.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(App);
+let key = fs.readFileSync('/run/secrets/cert_ssl.key');
+let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
+
+let options = {
+  key: key,
+  cert: cert,
+};
+let server = https.createServer(options, App);
 
 /**
  * Listen on provided port, on all network interfaces.

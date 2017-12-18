@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 services:
   frontend:
     image: 'vladbarosan/openapi-platform_frontend:latest'
@@ -7,10 +7,14 @@ services:
     environment:
       APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
       VALIDATION_WORKER_URI: 'http://validation-worker:5003'
+    secrets:
+      - cert_ssl.key
+      - cert_sslcrt.pem
     ports:
-      - '80:5001'
+      - '443:5001'
     networks:
       - webnet
+      - proxy
   validate:
     image: 'vladbarosan/openapi-platform_validate:latest'
     deploy:
@@ -20,10 +24,14 @@ services:
       REDIS_PORT: 6379
       WORKERS: 2
       APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
+    secrets:
+      - cert_ssl.key
+      - cert_sslcrt.pem
     ports:
       - '8080:5002'
     networks:
       - webnet
+      - proxy
   validation-worker:
     image: 'vladbarosan/openapi-platform_validation-worker:latest'
     deploy:
@@ -44,17 +52,12 @@ services:
       - '6379:6379'
     networks:
       - webnet
-  visualizer:
-    image: 'dockersamples/visualizer:stable'
-    ports:
-      - '8081:8080'
-    volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock'
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-    networks:
-      - webnet
 networks:
   webnet: null
+  proxy:
+    external: true
+secrets:
+  cert_ssl.key:
+    external: true
+  cert_sslcrt.pem:
+    external: true

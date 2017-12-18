@@ -1,5 +1,7 @@
 import * as http from 'http';
+import * as https from 'https';
 import * as cluster from 'cluster';
+import * as fs from 'fs';
 import App from '../app';
 import { AppInsightsClient, DebugLogger } from '../lib/util'
 
@@ -12,7 +14,15 @@ App.express.set('port', port);
 /**
  * Create HTTP server.
  */
-let server = http.createServer(App.express);
+
+let key = fs.readFileSync('/run/secrets/cert_ssl.key');
+let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
+
+let options = {
+    key: key,
+    cert: cert,
+};
+let server = https.createServer(options, App.express);
 
 /**
  * Listen on provided port, on all network interfaces.

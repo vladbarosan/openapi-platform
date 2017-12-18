@@ -4,6 +4,8 @@ const express_1 = require("express");
 const path = require("path");
 const os = require("os");
 const redis = require("redis");
+const url = require("url");
+const util = require("../lib/util");
 const util_1 = require("../lib/util");
 const oav = require('oav');
 let router = express_1.Router();
@@ -30,6 +32,14 @@ async function Bootstrap() {
     /* POST validate endpoint. */
     router.post('/validate', function (req, res, next) {
         redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
+        let requestResponsePair = req.body;
+        if (requestResponsePair === undefined) {
+            return;
+        }
+        let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+        let path = parsedUrl.pathname;
+        let apiVersion = parsedUrl.query['api-version'];
+        let resourceProvider = util.getProvider(path);
         let validationResult = apiValidator.validateLiveRequestResponse(req.body);
         const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
             && validationResult.responseValidationResult.successfulResponse;
@@ -39,7 +49,12 @@ async function Bootstrap() {
             message: JSON.stringify(validationResult),
             severity: SeverityLevel,
             properties: {
-                'validationId': 'ARM', 'operationId': operationId, 'isSuccess': isOperationSuccessful
+                'validationId': 'ARM',
+                'operationId': operationId,
+                'isSuccess': isOperationSuccessful,
+                'resourceProvider': resourceProvider,
+                'apiVersion': apiVersion,
+                'logType': 'data'
             }
         });
         // Something went wrong
@@ -53,6 +68,9 @@ async function Bootstrap() {
         }
         // Return 200 with validationResult
         res.status(200).send(validationResult);
+    });
+    router.post('/validateProd', function (req, res, next) {
+        res.status(403).send({ "Message": "Not available yet." });
     });
     return router;
 }
