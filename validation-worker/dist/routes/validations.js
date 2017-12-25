@@ -43,12 +43,18 @@ redisClient.on("message", (channel, message) => {
             && validationResult.responseValidationResult.successfulResponse;
         let SeverityLevel = isOperationSuccessful ? 4 : 3;
         let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        if (validationResult.requestValidationResult.operationInfo
+            && Array.isArray(validationResult.requestValidationResult.operationInfo)
+            && validationResult.requestValidationResult.operationInfo.length) {
+            operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        }
         util_1.AppInsightsClient.trackTrace({
             message: JSON.stringify(validationResult),
             severity: SeverityLevel,
             properties: {
                 'validationId': model.validationId,
                 'operationId': operationId,
+                'path': path,
                 'isSuccess': isOperationSuccessful,
                 "resourceProvider": model.resourceProvider,
                 "apiVersion": model.apiVersion,
@@ -75,8 +81,8 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
     if (isNaN(durationInSeconds) || durationInSeconds > 60 * 60) {
         res.status(400).send({ error: 'Duration is not a number or it is longer than maximum allowed value of 60 minutes.' });
     }
-    if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null) {
-        res.status(400).send({ error: 'Repo Url is not set in the request.' });
+    if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null || !modelOptions.repoUrl.StartsWith("https://github.com")) {
+        res.status(400).send({ error: 'Repo Url is not set or is not a GitHub repo.' });
     }
     if (modelOptions.branch === undefined || modelOptions.branch === null) {
         res.status(400).send({ error: 'Repo branch is not set in the request.' });

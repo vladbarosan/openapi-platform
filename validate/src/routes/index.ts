@@ -36,6 +36,14 @@ async function Bootstrap(): Promise<Router> {
   /* POST validate endpoint. */
   router.post('/validate', function (req, res, next) {
 
+    AppInsightsClient.trackTrace({
+      message: JSON.stringify(JSON.stringify(req.body)),
+      severity: 4,
+      properties: {
+        'logType': 'diagnostics'
+      }
+    });
+
     redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
 
     let requestResponsePair: any = req.body;
@@ -55,7 +63,13 @@ async function Bootstrap(): Promise<Router> {
       && validationResult.responseValidationResult.successfulResponse;
 
     let SeverityLevel = isOperationSuccessful ? 4 : 3;
-    let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+    let operationId = "OPERATION_NOT_FOUND"
+
+    if (validationResult.requestValidationResult.operationInfo
+      && Array.isArray(validationResult.requestValidationResult.operationInfo)
+      && validationResult.requestValidationResult.operationInfo.length) {
+      operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+    }
 
     AppInsightsClient.trackTrace({
       message: JSON.stringify(validationResult),
@@ -63,6 +77,7 @@ async function Bootstrap(): Promise<Router> {
       properties: {
         'validationId': 'ARM',
         'operationId': operationId,
+        'path': path,
         'isSuccess': isOperationSuccessful,
         'resourceProvider': resourceProvider,
         'apiVersion': apiVersion,

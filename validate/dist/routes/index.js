@@ -31,6 +31,13 @@ async function Bootstrap() {
     });
     /* POST validate endpoint. */
     router.post('/validate', function (req, res, next) {
+        util_1.AppInsightsClient.trackTrace({
+            message: JSON.stringify(JSON.stringify(req.body)),
+            severity: 4,
+            properties: {
+                'logType': 'diagnostics'
+            }
+        });
         redisClient.publish(redisAllRequestsChannel, JSON.stringify(req.body));
         let requestResponsePair = req.body;
         if (requestResponsePair === undefined) {
@@ -44,13 +51,19 @@ async function Bootstrap() {
         const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
             && validationResult.responseValidationResult.successfulResponse;
         let SeverityLevel = isOperationSuccessful ? 4 : 3;
-        let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        let operationId = "OPERATION_NOT_FOUND";
+        if (validationResult.requestValidationResult.operationInfo
+            && Array.isArray(validationResult.requestValidationResult.operationInfo)
+            && validationResult.requestValidationResult.operationInfo.length) {
+            operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
+        }
         util_1.AppInsightsClient.trackTrace({
             message: JSON.stringify(validationResult),
             severity: SeverityLevel,
             properties: {
                 'validationId': 'ARM',
                 'operationId': operationId,
+                'path': path,
                 'isSuccess': isOperationSuccessful,
                 'resourceProvider': resourceProvider,
                 'apiVersion': apiVersion,

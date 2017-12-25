@@ -21,7 +21,7 @@ const refreshJob: schedule.Job = setupRefresh();
 setupRepo().then(() => setupWorkers(numWorkers));
 
 async function setupRepo(): Promise<any> {
-  let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
+  let specsRepo = 'https://github.com/Azure/azure-rest-api-specs';
 
   let workingDir = path.resolve(os.homedir(), `repo`);
 

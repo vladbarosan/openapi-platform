@@ -13,7 +13,7 @@ const numWorkers = parseInt(process.env['WORKERS']) || 1;
 const refreshJob = setupRefresh();
 setupRepo().then(() => setupWorkers(numWorkers));
 async function setupRepo() {
-    let specsRepo = 'https://github.com/vladbarosan/sample-openapi-specs';
+    let specsRepo = 'https://github.com/Azure/azure-rest-api-specs';
     let workingDir = path.resolve(os.homedir(), `repo`);
     if (!fs.existsSync(workingDir)) {
         fs.mkdirSync(workingDir);
