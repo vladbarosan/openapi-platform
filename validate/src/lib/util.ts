@@ -34,7 +34,7 @@ export function getProvider(path: string): string {
         result = pathMatch[0];
     }
 
-    return result;
+    return result.slice("/providers/".length);
 };
 
 export let AppInsightsClient = applicationinsights.defaultClient;

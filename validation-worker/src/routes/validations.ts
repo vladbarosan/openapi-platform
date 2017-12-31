@@ -6,18 +6,27 @@ import * as onDeath from 'death';
 import { AppInsightsClient, DebugLogger } from '../lib/util';
 import * as util from '../lib/util';
 import * as url from 'url';
+import { MongoClient, Db, Collection, MongoClientOptions } from 'mongodb';
+import { RedisClient } from 'redis';
 
-let router = Router();
-const maxConcurrentValidations = 50;
+let router: Router = Router();
+const maxConcurrentValidations: number = 50;
+const validationsCollectionName: string = 'validationResults';
 
 let validationModels: Map<string, ValidationModel> = new Map();
 
-const redisAllRequestsChannel = process.env['REDIS_CHANNEL'] || "allValidationRequests";
-const redisClient = redis.createClient({
+const redisAllRequestsChannel: string = process.env['REDIS_CHANNEL'] || 'allValidationRequests';
+const redisClient: RedisClient = redis.createClient({
   host: process.env['REDIS_HOST'] || "127.0.0.1",
   port: parseInt(process.env['REDIS_PORT']) || 6379,
 });
 
+let dbConn: Db;
+let connectionOptions: MongoClientOptions = {};
+connectionOptions.native_parser = true;
+MongoClient.connect(process.env['DB_CONNECTION_STRING'], connectionOptions).then(db => {
+  dbConn = db;
+});
 
 redisClient.on("message", (channel, message) => {
   let requestResponsePair: any = JSON.parse(message);
@@ -28,8 +37,8 @@ redisClient.on("message", (channel, message) => {
     return;
   }
 
-  let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
-  let path = parsedUrl.pathname;
+  let parsedUrl: url.Url = url.parse(requestResponsePair.liveRequest.url, true);
+  let path: string = parsedUrl.pathname;
 
   let apiVersion = parsedUrl.query['api-version'];
   let resourceProvider = util.getProvider(path);
@@ -41,32 +50,7 @@ redisClient.on("message", (channel, message) => {
       return;
     }
 
-    let validationResult = model.validate(requestResponsePair);
-    const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
-      && validationResult.responseValidationResult.successfulResponse;
-
-    let SeverityLevel = isOperationSuccessful ? 4 : 3;
-    let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
-
-    if (validationResult.requestValidationResult.operationInfo
-      && Array.isArray(validationResult.requestValidationResult.operationInfo)
-      && validationResult.requestValidationResult.operationInfo.length) {
-      operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
-    }
-
-    AppInsightsClient.trackTrace({
-      message: JSON.stringify(validationResult),
-      severity: SeverityLevel,
-      properties: {
-        'validationId': model.validationId,
-        'operationId': operationId,
-        'path': path,
-        'isSuccess': isOperationSuccessful,
-        "resourceProvider": model.resourceProvider,
-        "apiVersion": model.apiVersion,
-        "logType": "data"
-      }
-    });
+    model.validate(requestResponsePair);
   });
 });
 
@@ -78,7 +62,7 @@ onDeath((signal, err) => {
 redisClient.subscribe(redisAllRequestsChannel);
 
 /* GET validations listing. */
-router.get('/', function (req, res, next) {
+router.get('/', (req, res, next) => {
   res.send('respond with a validation resource');
 });
 
@@ -88,15 +72,15 @@ router.post('/', async (req, res, next) => {
     res.status(429).send({ error: 'More live validations are running then the service currently supports. Try again later.' });
   }
 
-  let modelOptions = req.body;
-  let durationInSeconds = parseInt(modelOptions.duration);
+  let modelOptions: any = req.body;
+  let durationInSeconds: number = parseInt(modelOptions.duration);
 
 
   if (isNaN(durationInSeconds) || durationInSeconds > 60 * 60) {
     res.status(400).send({ error: 'Duration is not a number or it is longer than maximum allowed value of 60 minutes.' });
   }
 
-  if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null || !modelOptions.repoUrl.StartsWith("https://github.com")) {
+  if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null || !modelOptions.repoUrl.startsWith("https://github.com")) {
     res.status(400).send({ error: 'Repo Url is not set or is not a GitHub repo.' });
   }
 
@@ -112,12 +96,13 @@ router.post('/', async (req, res, next) => {
     res.status(400).send({ error: 'Api Version is not set in the request.' });
   }
 
-  const validationJsonsPattern = `/specification/**/${modelOptions.resourceProvider}/${modelOptions.apiVersion}/**/*.json`;
+  const validationJsonsPattern: string = `/specification/**/${modelOptions.resourceProvider}/${modelOptions.apiVersion}/**/*.json`;
 
-  const liveValidatorOptions = {
+  const liveValidatorOptions: any = {
     git: {
       shouldClone: true,
-      url: modelOptions.repoUrl
+      url: modelOptions.repoUrl,
+      branch: modelOptions.branch
     },
     swaggerPathsPattern: validationJsonsPattern,
   };
@@ -129,6 +114,7 @@ router.post('/', async (req, res, next) => {
   validationModels.set(model.validationId, model);
 
   setTimeout(() => {
+    dbConn.collection(validationsCollectionName).insertOne(model.validationResult);
     validationModels.delete(model.validationId);
     AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
   }, durationInSeconds * 1000);

@@ -15,13 +15,21 @@ const onDeath = require("death");
 const util_1 = require("../lib/util");
 const util = require("../lib/util");
 const url = require("url");
+const mongodb_1 = require("mongodb");
 let router = express_1.Router();
 const maxConcurrentValidations = 50;
+const validationsCollectionName = 'validationResults';
 let validationModels = new Map();
-const redisAllRequestsChannel = process.env['REDIS_CHANNEL'] || "allValidationRequests";
+const redisAllRequestsChannel = process.env['REDIS_CHANNEL'] || 'allValidationRequests';
 const redisClient = redis.createClient({
     host: process.env['REDIS_HOST'] || "127.0.0.1",
     port: parseInt(process.env['REDIS_PORT']) || 6379,
+});
+let dbConn;
+let connectionOptions = {};
+connectionOptions.native_parser = true;
+mongodb_1.MongoClient.connect(process.env['DB_CONNECTION_STRING'], connectionOptions).then(db => {
+    dbConn = db;
 });
 redisClient.on("message", (channel, message) => {
     let requestResponsePair = JSON.parse(message);
@@ -38,29 +46,7 @@ redisClient.on("message", (channel, message) => {
         if (model.resourceProvider != resourceProvider && model.apiVersion != apiVersion) {
             return;
         }
-        let validationResult = model.validate(requestResponsePair);
-        const isOperationSuccessful = validationResult.requestValidationResult.successfulRequest
-            && validationResult.responseValidationResult.successfulResponse;
-        let SeverityLevel = isOperationSuccessful ? 4 : 3;
-        let operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
-        if (validationResult.requestValidationResult.operationInfo
-            && Array.isArray(validationResult.requestValidationResult.operationInfo)
-            && validationResult.requestValidationResult.operationInfo.length) {
-            operationId = validationResult.requestValidationResult.operationInfo[0].operationId;
-        }
-        util_1.AppInsightsClient.trackTrace({
-            message: JSON.stringify(validationResult),
-            severity: SeverityLevel,
-            properties: {
-                'validationId': model.validationId,
-                'operationId': operationId,
-                'path': path,
-                'isSuccess': isOperationSuccessful,
-                "resourceProvider": model.resourceProvider,
-                "apiVersion": model.apiVersion,
-                "logType": "data"
-            }
-        });
+        model.validate(requestResponsePair);
     });
 });
 onDeath((signal, err) => {
@@ -69,7 +55,7 @@ onDeath((signal, err) => {
 });
 redisClient.subscribe(redisAllRequestsChannel);
 /* GET validations listing. */
-router.get('/', function (req, res, next) {
+router.get('/', (req, res, next) => {
     res.send('respond with a validation resource');
 });
 router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -81,7 +67,7 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
     if (isNaN(durationInSeconds) || durationInSeconds > 60 * 60) {
         res.status(400).send({ error: 'Duration is not a number or it is longer than maximum allowed value of 60 minutes.' });
     }
-    if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null || !modelOptions.repoUrl.StartsWith("https://github.com")) {
+    if (modelOptions.repoUrl === undefined || modelOptions.repoUrl === null || !modelOptions.repoUrl.startsWith("https://github.com")) {
         res.status(400).send({ error: 'Repo Url is not set or is not a GitHub repo.' });
     }
     if (modelOptions.branch === undefined || modelOptions.branch === null) {
@@ -97,7 +83,8 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
     const liveValidatorOptions = {
         git: {
             shouldClone: true,
-            url: modelOptions.repoUrl
+            url: modelOptions.repoUrl,
+            branch: modelOptions.branch
         },
         swaggerPathsPattern: validationJsonsPattern,
     };
@@ -106,6 +93,7 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
     util_1.DebugLogger("initialize finished successfully.");
     validationModels.set(model.validationId, model);
     setTimeout(() => {
+        dbConn.collection(validationsCollectionName).insertOne(model.validationResult);
         validationModels.delete(model.validationId);
         util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
     }, durationInSeconds * 1000);

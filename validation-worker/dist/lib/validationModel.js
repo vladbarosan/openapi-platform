@@ -12,6 +12,9 @@ const uuidv4 = require("uuid/v4");
 const path = require("path");
 const os = require("os");
 const fs = require("fs-extra");
+const util_1 = require("../lib/util");
+const validationResult_1 = require("./validationResult");
+const validationResult_2 = require("./validationResult");
 const oav = require('oav');
 /**
  * @class
@@ -29,6 +32,7 @@ class ValidationModel {
         this.apiVersion = apiVersion;
         this.resourceProvider = resourceProvider;
         this.directory = path.resolve(os.homedir(), `repo-${this.validationId}`);
+        this.validationResult = new validationResult_1.default(this.resourceProvider, this.apiVersion, this.validationId, validatorOptions.git.url, validatorOptions.git.branch);
         validatorOptions.directory = this.directory;
         this.validator = new oav.LiveValidator(validatorOptions);
     }
@@ -38,6 +42,7 @@ class ValidationModel {
      */
     validate(requestResponsePair) {
         const validationResult = this.validator.validateLiveRequestResponse(requestResponsePair);
+        this.updateStats(validationResult);
         return validationResult;
     }
     /**
@@ -48,6 +53,47 @@ class ValidationModel {
             yield this.validator.initialize();
             fs.removeSync(this.directory);
             return Promise.resolve();
+        });
+    }
+    updateStats(result) {
+        let operationId = "OPERATION_NOT_FOUND";
+        if (result.requestValidationResult.operationInfo
+            && Array.isArray(result.requestValidationResult.operationInfo)
+            && result.requestValidationResult.operationInfo.length) {
+            operationId = result.requestValidationResult.operationInfo[0].operationId;
+        }
+        if (!this.validationResult.operationResults.has(operationId)) {
+            this.validationResult.operationResults.set(operationId, new validationResult_1.OperationValidationResult(operationId));
+        }
+        const isOperationSuccessful = result.requestValidationResult.successfulRequest
+            && result.responseValidationResult.successfulResponse;
+        ++this.validationResult.totalOperationCount;
+        ++this.validationResult.operationResults.get(operationId).operationCount;
+        if (result.requestValidationResult.successfulRequest === true) {
+            ++this.validationResult.totalSuccessRequestCount;
+            ++this.validationResult.operationResults.get(operationId).successRequestCount;
+        }
+        if (result.responseValidationResult.successfulResponse === true) {
+            ++this.validationResult.totalSuccessResponseCount;
+            ++this.validationResult.operationResults.get(operationId).successResponseCount;
+        }
+        if (isOperationSuccessful) {
+            ++this.validationResult.totalSuccessCount;
+            ++this.validationResult.operationResults.get(operationId).successCount;
+        }
+        let SeverityLevel = isOperationSuccessful ? 4 : 3;
+        util_1.AppInsightsClient.trackTrace({
+            message: JSON.stringify(validationResult_2.default),
+            severity: SeverityLevel,
+            properties: {
+                'validationId': this.validationId,
+                'operationId': operationId,
+                'path': path,
+                'isSuccess': isOperationSuccessful,
+                "resourceProvider": this.resourceProvider,
+                "apiVersion": this.apiVersion,
+                "logType": "data"
+            }
         });
     }
 }

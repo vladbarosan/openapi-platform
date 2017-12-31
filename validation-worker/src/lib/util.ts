@@ -1,6 +1,7 @@
 
 const applicationinsights = require('applicationinsights');
 import * as debug from 'debug';
+import { MongoClient } from 'mongodb';
 
 applicationinsights.setup()
     .setAutoCollectRequests(true)
@@ -33,8 +34,7 @@ export function getProvider(path: string): string {
     while ((pathMatch = providerRegEx.exec(path)) != null) {
         result = pathMatch[0];
     }
-
-    return result;
+    return result.slice("/providers/".length);
 };
 
 export const AppInsightsClient = applicationinsights.defaultClient;

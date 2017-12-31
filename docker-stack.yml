@@ -5,7 +5,7 @@ services:
     deploy:
       replicas: 1
     environment:
-      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <>
       VALIDATION_WORKER_URI: 'http://validation-worker:5003'
     secrets:
       - cert_ssl.key
@@ -23,7 +23,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
-      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <>
     secrets:
       - cert_ssl.key
       - cert_sslcrt.pem
@@ -40,8 +40,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
-      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
-      AZURE_STORAGE_CONNECTION_STRING: <CONN_STRING>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <>
+      DB_CONNECTION_STRING: <CONN_STRING>
     ports:
       - '5003:5003'
     networks:

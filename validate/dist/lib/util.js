@@ -29,7 +29,7 @@ function getProvider(path) {
     while ((pathMatch = providerRegEx.exec(path)) != null) {
         result = pathMatch[0];
     }
-    return result;
+    return result.slice("/providers/".length);
 }
 exports.getProvider = getProvider;
 ;

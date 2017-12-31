@@ -4,7 +4,6 @@
  * Module dependencies.
  */
 
-import * as http from 'http';
 import * as cluster from 'cluster';
 import * as git from 'simple-git/promise';
 import * as fs from 'fs';
