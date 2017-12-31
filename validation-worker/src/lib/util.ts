@@ -37,5 +37,11 @@ export function getProvider(path: string): string {
     return result.slice("/providers/".length);
 };
 
+export const AsyncMiddleware = fn =>
+    (req, res, next) => {
+        Promise.resolve(fn(req, res, next))
+            .catch(next);
+    };
+
 export const AppInsightsClient = applicationinsights.defaultClient;
 export const DebugLogger: debug.IDebugger = debug(`ValidationWorker`);

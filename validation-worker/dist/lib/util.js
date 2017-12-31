@@ -33,5 +33,9 @@ function getProvider(path) {
 }
 exports.getProvider = getProvider;
 ;
+exports.AsyncMiddleware = fn => (req, res, next) => {
+    Promise.resolve(fn(req, res, next))
+        .catch(next);
+};
 exports.AppInsightsClient = applicationinsights.defaultClient;
 exports.DebugLogger = debug(`ValidationWorker`);

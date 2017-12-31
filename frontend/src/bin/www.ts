@@ -24,14 +24,21 @@ App.set('port', port);
  * Create HTTP server.
  */
 
-let key = fs.readFileSync('/run/secrets/cert_ssl.key');
-let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
+let server;
 
-let options = {
-  key: key,
-  cert: cert,
-};
-let server = https.createServer(options, App);
+try {
+  let key = fs.readFileSync('/run/secrets/cert_ssl.key');
+  let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
+  let options = {
+    key: key,
+    cert: cert,
+  };
+  server = https.createServer(options, App);
+}
+catch {
+  server = http.createServer(App);
+}
+
 
 /**
  * Listen on provided port, on all network interfaces.

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const util_1 = require("../lib/util");
@@ -13,13 +14,19 @@ app_1.default.set('port', port);
 /**
  * Create HTTP server.
  */
-let key = fs.readFileSync('/run/secrets/cert_ssl.key');
-let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
-let options = {
-    key: key,
-    cert: cert,
-};
-let server = https.createServer(options, app_1.default);
+let server;
+try {
+    let key = fs.readFileSync('/run/secrets/cert_ssl.key');
+    let cert = fs.readFileSync('/run/secrets/cert_sslcrt.pem');
+    let options = {
+        key: key,
+        cert: cert,
+    };
+    server = https.createServer(options, app_1.default);
+}
+catch (_a) {
+    server = http.createServer(app_1.default);
+}
 /**
  * Listen on provided port, on all network interfaces.
  */

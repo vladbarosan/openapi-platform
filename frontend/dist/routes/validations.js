@@ -15,9 +15,18 @@ const util_1 = require("../lib/util");
 var router = express_1.Router();
 var validationService = process.env["VALIDATION_WORKER_URI"] || 'http://localhost:5003';
 /* GET users listing. */
-router.get('/', (req, res, next) => {
-    res.send('respond with a validation resource');
-});
+router.get('/:validationId', util_1.AsyncMiddleware((req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    let validationId = req.params.validationId;
+    let options = {};
+    options.resolveWithFullResponse = true;
+    let response = yield RequestClient.get(`${validationService}/api/validations/${validationId}`, options);
+    if (response.statusCode != 200) {
+        res.status(response.statusCode).send({ error: response.statusMessage });
+    }
+    else {
+        res.status(200).send(JSON.parse(response.body));
+    }
+})));
 router.post('/', util_1.AsyncMiddleware((req, res, next) => __awaiter(this, void 0, void 0, function* () {
     let options = {};
     options.form = req.body;
@@ -26,7 +35,9 @@ router.post('/', util_1.AsyncMiddleware((req, res, next) => __awaiter(this, void
     if (response.statusCode != 200) {
         res.status(response.statusCode).send({ error: response.statusMessage });
     }
-    let validationId = JSON.parse(response.body).validationId;
-    res.status(200).send({ validationId: validationId });
+    else {
+        let validationId = JSON.parse(response.body).validationId;
+        res.status(200).send({ validationId: validationId });
+    }
 })));
 exports.default = router;

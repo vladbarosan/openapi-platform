@@ -6,7 +6,7 @@ import * as onDeath from 'death';
 import { AppInsightsClient, DebugLogger } from '../lib/util';
 import * as util from '../lib/util';
 import * as url from 'url';
-import { MongoClient, Db, Collection, MongoClientOptions } from 'mongodb';
+import { MongoClient, Db, Collection, MongoClientOptions, FindOneOptions } from 'mongodb';
 import { RedisClient } from 'redis';
 
 let router: Router = Router();
@@ -62,11 +62,20 @@ onDeath((signal, err) => {
 redisClient.subscribe(redisAllRequestsChannel);
 
 /* GET validations listing. */
-router.get('/', (req, res, next) => {
-  res.send('respond with a validation resource');
-});
+router.get('/:validationId', util.AsyncMiddleware(async (req, res, next) => {
+  let validationId: string = req.params.validationId;
+  let findOptions: FindOneOptions = {};
+  findOptions.returnKey = false;
+  findOptions.fields = { '_id': 0 };
+  let validationResult: any = await dbConn.collection(validationsCollectionName).findOne({ validationId: validationId }, findOptions);
+  if (validationResult == null) {
+    res.status(404).send({ error: 'No validation results exists for the specified validation Id. Please retry later.' });
+  } else {
+    res.status(200).send(validationResult);
+  }
+}));
 
-router.post('/', async (req, res, next) => {
+router.post('/', util.AsyncMiddleware(async (req, res, next) => {
 
   if (validationModels.size >= maxConcurrentValidations) {
     res.status(429).send({ error: 'More live validations are running then the service currently supports. Try again later.' });
@@ -120,6 +129,6 @@ router.post('/', async (req, res, next) => {
   }, durationInSeconds * 1000);
 
   res.status(200).send({ validationId: model.validationId });
-});
+}));
 
 export default router;

@@ -55,10 +55,20 @@ onDeath((signal, err) => {
 });
 redisClient.subscribe(redisAllRequestsChannel);
 /* GET validations listing. */
-router.get('/', (req, res, next) => {
-    res.send('respond with a validation resource');
-});
-router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+router.get('/:validationId', util.AsyncMiddleware((req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    let validationId = req.params.validationId;
+    let findOptions = {};
+    findOptions.returnKey = false;
+    findOptions.fields = { '_id': 0 };
+    let validationResult = yield dbConn.collection(validationsCollectionName).findOne({ validationId: validationId }, findOptions);
+    if (validationResult == null) {
+        res.status(404).send({ error: 'No validation results exists for the specified validation Id. Please retry later.' });
+    }
+    else {
+        res.status(200).send(validationResult);
+    }
+})));
+router.post('/', util.AsyncMiddleware((req, res, next) => __awaiter(this, void 0, void 0, function* () {
     if (validationModels.size >= maxConcurrentValidations) {
         res.status(429).send({ error: 'More live validations are running then the service currently supports. Try again later.' });
     }
@@ -98,5 +108,5 @@ router.post('/', (req, res, next) => __awaiter(this, void 0, void 0, function* (
         util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
     }, durationInSeconds * 1000);
     res.status(200).send({ validationId: model.validationId });
-}));
+})));
 exports.default = router;
