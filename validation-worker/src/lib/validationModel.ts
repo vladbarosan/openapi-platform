@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as debug from 'debug';
 import * as fs from 'fs-extra';
+import * as url from 'url';
 import { AppInsightsClient, DebugLogger } from '../lib/util';
 import ValidationResult, { OperationValidationResult } from './validationResult';
 import validationResult from './validationResult';
@@ -42,7 +43,7 @@ class ValidationModel {
      */
     validate(requestResponsePair: any): any {
         const validationResult: any = this.validator.validateLiveRequestResponse(requestResponsePair);
-        this.updateStats(validationResult);
+        this.updateStats(validationResult, requestResponsePair);
         return validationResult;
     }
 
@@ -55,8 +56,10 @@ class ValidationModel {
         return Promise.resolve();
     }
 
-    updateStats(result: any): void {
+    updateStats(result: any, requestResponsePair: any): void {
         let operationId = "OPERATION_NOT_FOUND"
+        let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+        let operationPath = parsedUrl.pathname;
 
         if (result.requestValidationResult.operationInfo
             && Array.isArray(result.requestValidationResult.operationInfo)
@@ -67,7 +70,7 @@ class ValidationModel {
         if (!this.validationResult.operationResults.has(operationId)) {
             this.validationResult.operationResults.set(operationId, new OperationValidationResult(operationId));
         }
-        const isOperationSuccessful: boolean = result.requestValidationResult.successfulRequest
+        const isOperationSuccessful = result.requestValidationResult.successfulRequest
             && result.responseValidationResult.successfulResponse;
 
         ++this.validationResult.totalOperationCount;
@@ -88,19 +91,19 @@ class ValidationModel {
             ++this.validationResult.operationResults.get(operationId).successCount;
         }
 
-        let SeverityLevel: number = isOperationSuccessful ? 4 : 3;
+        let severityLevel = isOperationSuccessful ? 4 : 3;
 
         AppInsightsClient.trackTrace({
-            message: JSON.stringify(validationResult),
-            severity: SeverityLevel,
+            message: JSON.stringify(result),
+            severity: severityLevel,
             properties: {
                 'validationId': this.validationId,
                 'operationId': operationId,
-                'path': path,
+                'path': operationPath,
                 'isSuccess': isOperationSuccessful,
-                "resourceProvider": this.resourceProvider,
-                "apiVersion": this.apiVersion,
-                "logType": "data"
+                'resourceProvider': this.resourceProvider,
+                'apiVersion': this.apiVersion,
+                'logType': 'data'
             }
         });
     }

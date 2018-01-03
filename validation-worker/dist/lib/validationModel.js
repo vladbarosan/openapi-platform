@@ -12,9 +12,9 @@ const uuidv4 = require("uuid/v4");
 const path = require("path");
 const os = require("os");
 const fs = require("fs-extra");
+const url = require("url");
 const util_1 = require("../lib/util");
 const validationResult_1 = require("./validationResult");
-const validationResult_2 = require("./validationResult");
 const oav = require('oav');
 /**
  * @class
@@ -42,7 +42,7 @@ class ValidationModel {
      */
     validate(requestResponsePair) {
         const validationResult = this.validator.validateLiveRequestResponse(requestResponsePair);
-        this.updateStats(validationResult);
+        this.updateStats(validationResult, requestResponsePair);
         return validationResult;
     }
     /**
@@ -55,8 +55,10 @@ class ValidationModel {
             return Promise.resolve();
         });
     }
-    updateStats(result) {
+    updateStats(result, requestResponsePair) {
         let operationId = "OPERATION_NOT_FOUND";
+        let parsedUrl = url.parse(requestResponsePair.liveRequest.url, true);
+        let operationPath = parsedUrl.pathname;
         if (result.requestValidationResult.operationInfo
             && Array.isArray(result.requestValidationResult.operationInfo)
             && result.requestValidationResult.operationInfo.length) {
@@ -81,18 +83,18 @@ class ValidationModel {
             ++this.validationResult.totalSuccessCount;
             ++this.validationResult.operationResults.get(operationId).successCount;
         }
-        let SeverityLevel = isOperationSuccessful ? 4 : 3;
+        let severityLevel = isOperationSuccessful ? 4 : 3;
         util_1.AppInsightsClient.trackTrace({
-            message: JSON.stringify(validationResult_2.default),
-            severity: SeverityLevel,
+            message: JSON.stringify(result),
+            severity: severityLevel,
             properties: {
                 'validationId': this.validationId,
                 'operationId': operationId,
-                'path': path,
+                'path': operationPath,
                 'isSuccess': isOperationSuccessful,
-                "resourceProvider": this.resourceProvider,
-                "apiVersion": this.apiVersion,
-                "logType": "data"
+                'resourceProvider': this.resourceProvider,
+                'apiVersion': this.apiVersion,
+                'logType': 'data'
             }
         });
     }

@@ -103,9 +103,14 @@ router.post('/', util.AsyncMiddleware((req, res, next) => __awaiter(this, void 0
     util_1.DebugLogger("initialize finished successfully.");
     validationModels.set(model.validationId, model);
     setTimeout(() => {
+        util_1.DebugLogger(`Saving validation result for ${model.validationId} and removing it from traffic.`);
         dbConn.collection(validationsCollectionName).insertOne(model.validationResult);
         validationModels.delete(model.validationId);
-        util_1.AppInsightsClient.trackTrace(`Validation model ${model.validationId} is being deleted.`, 4, { "logType": "diagnostics" });
+        util_1.AppInsightsClient.trackTrace({
+            message: `Validation model ${model.validationId} is being deleted.`,
+            severity: 4,
+            properties: { 'logType': 'diagnostics' }
+        });
     }, durationInSeconds * 1000);
     res.status(200).send({ validationId: model.validationId });
 })));
