@@ -89,7 +89,7 @@ router.post('/', util.AsyncMiddleware((req, res, next) => __awaiter(this, void 0
     if (modelOptions.apiVersion === undefined && modelOptions.apiVersion === null) {
         res.status(400).send({ error: 'Api Version is not set in the request.' });
     }
-    const validationJsonsPattern = `/specification/**/${modelOptions.resourceProvider}/${modelOptions.apiVersion}/**/*.json`;
+    const validationJsonsPattern = `/specification/**/${modelOptions.resourceProvider}/**/${modelOptions.apiVersion}/**/*.json`;
     const liveValidatorOptions = {
         git: {
             shouldClone: true,

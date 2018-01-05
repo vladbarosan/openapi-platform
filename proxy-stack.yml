@@ -11,8 +11,8 @@ services:
       - LISTENER_ADDRESS=swarm-listener
       - MODE=swarm
     secrets:
-      - cert_ssl.key
-      - cert_sslcrt.pem
+      - source: cert_proxy.pem
+        target: /certs/cert_proxy.pem
     deploy:
       replicas: 2
   swarm-listener:
@@ -34,7 +34,5 @@ networks:
   proxy:
     external: true
 secrets:
-  cert_ssl.key:
-    external: true
-  cert_sslcrt.pem:
+  cert_proxy.pem:
     external: true
