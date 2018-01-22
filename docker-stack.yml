@@ -3,9 +3,15 @@ services:
   frontend:
     image: 'vladbarosan/openapi-platform_frontend:latest'
     deploy:
-      replicas: 1
+      replicas: 2
+      update_config:
+        parallelism: 1
+      labels:
+        - com.df.notify=true
+        - com.df.servicePath=app.azure-devex-tools.com
+        - com.df.port=5001
     environment:
-      APPINSIGHTS_INSTRUMENTATIONKEY: <>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
       VALIDATION_WORKER_URI: 'http://validation-worker:5003'
       NODE_ENV: production
     secrets:
@@ -15,17 +21,22 @@ services:
       - '443:5001'
     networks:
       - webnet
-      - proxy
   validate:
     image: 'vladbarosan/openapi-platform_validate:latest'
     deploy:
       replicas: 2
+      update_config:
+        parallelism: 1
+      labels:
+        - com.df.notify=true
+        - com.df.serviceDomain=arm.azure-devex-tools.com
+        - com.df.port=5002
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
       NODE_ENV: production
-      APPINSIGHTS_INSTRUMENTATIONKEY: <>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
     secrets:
       - cert_ssl.key
       - cert_sslcrt.pem
@@ -33,32 +44,37 @@ services:
       - '8080:5002'
     networks:
       - webnet
-      - proxy
   validation-worker:
     image: 'vladbarosan/openapi-platform_validation-worker:latest'
     deploy:
       replicas: 2
+      update_config:
+        parallelism: 1
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WORKERS: 2
       NODE_ENV: production
-      APPINSIGHTS_INSTRUMENTATIONKEY: <>
-      DB_CONNECTION_STRING: <CONN_STRING>
+      APPINSIGHTS_INSTRUMENTATIONKEY: <APP_KEY>
+      DB_CONNECTION_STRING: <APP_KEY>
     ports:
       - '5003:5003'
     networks:
       - webnet
   redis:
     image: redis
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+      restart_policy:
+        condition: any
     ports:
       - '6379:6379'
     networks:
       - webnet
 networks:
   webnet: null
-  proxy:
-    external: true
 secrets:
   cert_ssl.key:
     external: true

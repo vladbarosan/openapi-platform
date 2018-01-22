@@ -34,9 +34,10 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Worker service",
-            "program": "${workspaceFolder}\\worker\\dist\\bin\\www",
+            "program": "${workspaceFolder}\\validation-worker\\dist\\bin\\www",
             "env": {
-                "APPINSIGHTS_INSTRUMENTATIONKEY": "<APP_KEY>"
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "<APP_KEY>",
+                "DB_CONNECTION_STRING": "<DB_KEY>"
             }
         }
     ]
